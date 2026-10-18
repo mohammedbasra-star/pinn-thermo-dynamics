@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch 2.x](https://img.shields.io/badge/PyTorch-2.x-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-username/pinn-thermo-dynamics/blob/main/notebooks/quickstart_demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mohammedsoczfod-hue/pinn-thermo-dynamics/blob/main/notebooks/quickstart_demo.ipynb)
 [![SciML-Bench](https://img.shields.io/badge/SciML--Bench-Verified-success.svg)]()
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -125,7 +125,7 @@ pinn-thermo-dynamics/
 
 ### 1. Environment Setup
 ```bash
-git clone https://github.com/your-username/pinn-thermo-dynamics.git
+git clone https://github.com/mohammedsoczfod-hue/pinn-thermo-dynamics.git
 cd pinn-thermo-dynamics
 
 python -m venv venv
@@ -179,7 +179,7 @@ python evaluate.py --checkpoint results/forward_run/best_model.pt --output-dir e
 
 Launch the complete end-to-end interactive tutorial directly in your browser:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/your-username/pinn-thermo-dynamics/blob/main/notebooks/quickstart_demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mohammedsoczfod-hue/pinn-thermo-dynamics/blob/main/notebooks/quickstart_demo.ipynb)
 
 ---
 
@@ -193,7 +193,7 @@ This repository builds upon foundational paradigms originally established by **R
   title        = {Physics-Informed Neural Networks for High-Temperature Turbomachinery & Thermodynamic Dynamics},
   year         = {2026},
   publisher    = {GitHub},
-  howpublished = {\url{https://github.com/your-username/pinn-thermo-dynamics}},
+  howpublished = {\url{https://github.com/mohammedsoczfod-hue/pinn-thermo-dynamics}},
   version      = {0.1.0}
 }
 ```
