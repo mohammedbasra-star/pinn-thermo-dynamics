@@ -1,42 +1,44 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pinn-thermo-dynamics"
-version = "0.1.0"
-description = "Physics-Informed Neural Networks for High-Temperature Turbomachinery & Thermodynamic Dynamics"
+name = "pinns-modern-pytorch-benchmarks"
+version = "2.0.0"
+description = "Modernized high-performance pure PyTorch 2.x implementation of benchmark Physics-Informed Neural Networks (Raissi et al. 2019)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "PINN Research Lab"}
+    {name = "Scientific Machine Learning (SciML) Research"}
 ]
 keywords = [
     "physics-informed-neural-networks",
     "pinn",
     "scientific-machine-learning",
     "sciml",
-    "turbomachinery",
-    "aerothermal-dynamics",
-    "heat-transfer",
-    "pytorch"
+    "burgers-equation",
+    "schrodinger-equation",
+    "navier-stokes",
+    "pytorch-2",
+    "torch-compile",
+    "autograd"
 ]
 dependencies = [
-    "torch>=2.0.0",
+    "torch>=2.2.0",
+    "scipy>=1.11.0",
     "numpy>=1.24.0",
-    "scipy>=1.10.0",
     "matplotlib>=3.7.0",
     "seaborn>=0.12.0",
-    "tqdm>=4.65.0"
+    "tqdm>=4.65.0",
+    "jupyter>=1.0.0"
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
-    "flake8>=6.0.0",
-    "jupyter>=1.0.0"
+    "flake8>=6.0.0"
 ]
 
 [tool.setuptools.packages.find]

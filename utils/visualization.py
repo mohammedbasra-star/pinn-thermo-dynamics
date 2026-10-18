@@ -1,20 +1,20 @@
 """
-Physics-Informed Neural Networks for High-Temperature Turbomachinery & Thermodynamic Dynamics
+Physics-Informed Neural Networks (PINNs) Benchmark Suite - PyTorch 2.x
 Module: utils/visualization.py
 
-Publication-ready scientific plotting routines for journal articles and benchmark documentation.
-Generates 300 DPI high-resolution figures:
-- Tri-panel 2D heatmaps (Exact Solution, PINN Prediction, Absolute Pointwise Error)
-- Dual-phase (Adam + L-BFGS) loss convergence trajectories
-- 1D Spatiotemporal temperature profile slices
-- Inverse parameter discovery convergence curves
+Publication-ready scientific plotting routines reproducing the benchmark figures
+from Maziar Raissi et al. (2019, Journal of Computational Physics):
+1. Iconic Raissi 2019 Figure 1: 2D spatiotemporal heatmap of u(x, t) with collocation
+   points overlay, paired with cross-sectional slices at t = 0.25, 0.50, 0.75.
+2. Tri-panel 2D comparison: Exact Solution, PINN Prediction, and Absolute Error Map.
+3. Dual-phase (Adam + L-BFGS) loss convergence trajectory.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+import matplotlib.gridspec as gridspec
 
 
 def set_academic_style():
@@ -39,53 +39,155 @@ def set_academic_style():
     })
 
 
-def plot_solution_tripanel(
-    X: np.ndarray,
-    T_grid: np.ndarray,
-    T_true: np.ndarray,
-    T_pred: np.ndarray,
+def plot_raissi_burgers_figure(
+    x_grid: np.ndarray,
+    t_grid: np.ndarray,
+    u_exact: np.ndarray,
+    u_pred: np.ndarray,
+    x_train: Optional[np.ndarray] = None,
+    t_train: Optional[np.ndarray] = None,
     save_path: Optional[str] = None,
-    title_suffix: str = "",
 ) -> plt.Figure:
-    """
-    Plots a publication 3-panel 2D comparison:
-    [Ground Truth] vs [PINN Prediction] vs [Absolute Pointwise Error]
+    r"""
+    Faithful reproduction of Figure 1 from Raissi et al. (2019, JCP):
+    Top panel: 2D spatiotemporal heatmap of :math:`u(x, t)` with training points overlaid.
+    Bottom panel: Three temporal cross-sections at :math:`t = 0.25, 0.50, 0.75` comparing
+    Exact vs Modern PINN prediction.
     """
     set_academic_style()
-    error = np.abs(T_pred - T_true)
 
-    fig, axes = plt.subplots(1, 3, figsize=(14, 3.8), constrained_layout=True)
+    # Ensure 1D coordinate vectors
+    x = x_grid.flatten()
+    t = t_grid.flatten()
+    # u shapes should be (len(x), len(t))
+    if u_exact.shape != (len(x), len(t)):
+        u_exact = u_exact.reshape(len(x), len(t))
+    if u_pred.shape != (len(x), len(t)):
+        u_pred = u_pred.reshape(len(x), len(t))
 
-    vmin = min(T_true.min(), T_pred.min())
-    vmax = max(T_true.max(), T_pred.max())
+    T, X = np.meshgrid(t, x)
 
-    # 1. Ground Truth
-    c0 = axes[0].contourf(T_grid, X, T_true, levels=60, cmap="inferno", vmin=vmin, vmax=vmax)
-    axes[0].set_title(r"(a) Exact Ground Truth $T^*(x, t)$")
-    axes[0].set_xlabel(r"Time $t$ [s]")
-    axes[0].set_ylabel(r"Blade Wall Coordinate $x/L$")
-    fig.colorbar(c0, ax=axes[0], fraction=0.046, pad=0.04, label=r"Temperature $T$")
+    fig = plt.figure(figsize=(10, 7.5))
+    gs = gridspec.GridSpec(2, 3, height_ratios=[1.2, 1.0], hspace=0.38, wspace=0.32)
 
-    # 2. PINN Prediction
-    c1 = axes[1].contourf(T_grid, X, T_pred, levels=60, cmap="inferno", vmin=vmin, vmax=vmax)
-    axes[1].set_title(rf"(b) PINN Prediction $\hat{{T}}(x, t)$ {title_suffix}")
-    axes[1].set_xlabel(r"Time $t$ [s]")
-    axes[1].set_ylabel(r"Blade Wall Coordinate $x/L$")
-    fig.colorbar(c1, ax=axes[1], fraction=0.046, pad=0.04, label=r"Predicted $T$")
+    # Top Panel: 2D Spatiotemporal Profile
+    ax_top = fig.add_subplot(gs[0, :])
+    contour = ax_top.pcolor(T, X, u_pred, cmap="rainbow", shading="auto")
+    cbar = fig.colorbar(contour, ax=ax_top, fraction=0.046, pad=0.03)
+    cbar.set_label(r"$u(t, x)$")
 
-    # 3. Absolute Pointwise Error
-    c2 = axes[2].contourf(T_grid, X, error, levels=60, cmap="viridis")
-    axes[2].set_title(r"(c) Absolute Error $|\hat{T} - T^*|$")
-    axes[2].set_xlabel(r"Time $t$ [s]")
-    axes[2].set_ylabel(r"Blade Wall Coordinate $x/L$")
-    cb2 = fig.colorbar(c2, ax=axes[2], fraction=0.046, pad=0.04, label=r"Pointwise Error")
-    cb2.formatter.set_powerlimits((0, 0))
-    cb2.update_ticks()
+    # Overlay training points if provided
+    if x_train is not None and t_train is not None:
+        ax_top.plot(
+            t_train.flatten(),
+            x_train.flatten(),
+            "kx",
+            markersize=3.5,
+            alpha=0.6,
+            label=f"Collocation/BC points (N={len(x_train)})",
+        )
+        ax_top.legend(loc="upper right", framealpha=0.85)
+
+    # Draw vertical dashed lines for cross-section snapshot times
+    target_times = [0.25, 0.50, 0.75]
+    for snap_t in target_times:
+        ax_top.axvline(snap_t, color="white", linestyle="--", linewidth=1.2, alpha=0.8)
+
+    ax_top.set_title(r"Burgers' Equation: Modern PINN Prediction $\hat{u}(t, x)$", fontsize=12)
+    ax_top.set_xlabel(r"Time $t$")
+    ax_top.set_ylabel(r"Spatial coordinate $x$")
+    ax_top.set_xlim([t.min(), t.max()])
+    ax_top.set_ylim([x.min(), x.max()])
+
+    # Bottom Panel: Cross-sections at t = 0.25, 0.50, 0.75
+    for i, snap_t in enumerate(target_times):
+        ax_snap = fig.add_subplot(gs[1, i])
+        t_idx = int(np.argmin(np.abs(t - snap_t)))
+        actual_t = t[t_idx]
+
+        ax_snap.plot(
+            x,
+            u_exact[:, t_idx],
+            "b-",
+            linewidth=2.0,
+            label="Exact (Chebfun)",
+        )
+        ax_snap.plot(
+            x,
+            u_pred[:, t_idx],
+            "r--",
+            linewidth=2.0,
+            label="Modern PINN",
+        )
+
+        ax_snap.set_title(f"$t = {actual_t:.2f}$")
+        ax_snap.set_xlabel(r"$x$")
+        ax_snap.set_ylabel(r"$u(t, x)$")
+        ax_snap.set_ylim([-1.1, 1.1])
+        ax_snap.legend(loc="upper right", fontsize=8)
 
     if save_path:
         os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-        fig.savefig(save_path)
-        plt.close(fig)
+        fig.savefig(save_path, dpi=300)
+        print(f"[FIGURE SAVED] Raissi benchmark figure -> {save_path}")
+
+    return fig
+
+
+def plot_solution_tripanel(
+    x_grid: np.ndarray,
+    t_grid: np.ndarray,
+    u_exact: np.ndarray,
+    u_pred: np.ndarray,
+    save_path: Optional[str] = None,
+    title_prefix: str = "Burgers' Equation",
+) -> plt.Figure:
+    """
+    Plots a 3-panel 2D comparison:
+    [Exact Benchmark] vs [Modern PINN Prediction] vs [Absolute Pointwise Error Map]
+    """
+    set_academic_style()
+
+    x = x_grid.flatten()
+    t = t_grid.flatten()
+    if u_exact.shape != (len(x), len(t)):
+        u_exact = u_exact.reshape(len(x), len(t))
+    if u_pred.shape != (len(x), len(t)):
+        u_pred = u_pred.reshape(len(x), len(t))
+
+    error = np.abs(u_pred - u_exact)
+    T, X = np.meshgrid(t, x)
+
+    fig, axes = plt.subplots(1, 3, figsize=(14, 3.8), constrained_layout=True)
+
+    vmin = min(u_exact.min(), u_pred.min())
+    vmax = max(u_exact.max(), u_pred.max())
+
+    # 1. Exact
+    c0 = axes[0].pcolor(T, X, u_exact, cmap="rainbow", shading="auto", vmin=vmin, vmax=vmax)
+    axes[0].set_title(f"(a) Exact Benchmark $u^*(t, x)$")
+    axes[0].set_xlabel(r"Time $t$")
+    axes[0].set_ylabel(r"Coordinate $x$")
+    fig.colorbar(c0, ax=axes[0], fraction=0.046, pad=0.04, label=r"$u$")
+
+    # 2. Modern PINN
+    c1 = axes[1].pcolor(T, X, u_pred, cmap="rainbow", shading="auto", vmin=vmin, vmax=vmax)
+    axes[1].set_title(f"(b) Modern PINN $\\hat{{u}}(t, x)$")
+    axes[1].set_xlabel(r"Time $t$")
+    axes[1].set_ylabel(r"Coordinate $x$")
+    fig.colorbar(c1, ax=axes[1], fraction=0.046, pad=0.04, label=r"$\hat{u}$")
+
+    # 3. Absolute Error
+    c2 = axes[2].pcolor(T, X, error, cmap="viridis", shading="auto")
+    axes[2].set_title(f"(c) Absolute Error $|u^* - \\hat{{u}}|$")
+    axes[2].set_xlabel(r"Time $t$")
+    axes[2].set_ylabel(r"Coordinate $x$")
+    fig.colorbar(c2, ax=axes[2], fraction=0.046, pad=0.04, label=r"Absolute Error")
+
+    if save_path:
+        os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
+        fig.savefig(save_path, dpi=300)
+        print(f"[FIGURE SAVED] Tri-panel comparison -> {save_path}")
 
     return fig
 
@@ -94,103 +196,32 @@ def plot_loss_history(
     history: Dict[str, List[float]],
     save_path: Optional[str] = None,
 ) -> plt.Figure:
-    """Plots multi-objective scientific loss convergence across Adam and L-BFGS phases."""
+    """
+    Plots training loss convergence across Adam and L-BFGS optimization phases.
+    """
     set_academic_style()
-    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    fig, ax = plt.subplots(figsize=(7, 4.2), constrained_layout=True)
 
-    steps = list(range(len(history["loss_total"])))
+    if "loss" in history:
+        ax.semilogy(history["loss"], label=r"Total Loss $\mathcal{L}_{\mathrm{total}}$", color="#1f77b4", lw=1.8)
+    if "loss_u" in history:
+        ax.semilogy(history["loss_u"], label=r"Boundary / Data Loss $\mathcal{L}_u$", color="#2ca02c", lw=1.4, ls="--")
+    if "loss_f" in history:
+        ax.semilogy(history["loss_f"], label=r"PDE Residual Loss $\mathcal{L}_f$", color="#d62728", lw=1.4, ls=":")
 
-    ax.semilogy(steps, history["loss_total"], label=r"Total Loss $\mathcal{L}_{total}$", color="#1f77b4", linewidth=2.0)
-    if "loss_pde" in history and any(history["loss_pde"]):
-        ax.semilogy(steps, history["loss_pde"], label=r"PDE Residual $\mathcal{L}_{pde}$", color="#d62728", linestyle="--", alpha=0.85)
-    if "loss_bc" in history and any(history["loss_bc"]):
-        ax.semilogy(steps, history["loss_bc"], label=r"Boundary $\mathcal{L}_{bc}$", color="#2ca02c", linestyle="-.", alpha=0.85)
-    if "loss_ic" in history and any(history["loss_ic"]):
-        ax.semilogy(steps, history["loss_ic"], label=r"Initial Cond. $\mathcal{L}_{ic}$", color="#ff7f0e", linestyle=":", alpha=0.85)
-    if "loss_data" in history and any(v > 0 for v in history["loss_data"]):
-        ax.semilogy(steps, history["loss_data"], label=r"Sensor Data $\mathcal{L}_{data}$", color="#9467bd", linestyle="-", alpha=0.85)
+    # Mark Adam to L-BFGS phase transition if logged
+    if "phase_switch_step" in history and history["phase_switch_step"] > 0:
+        switch = history["phase_switch_step"]
+        ax.axvline(switch, color="gray", linestyle="-.", alpha=0.8, label=f"Phase 2 (L-BFGS) Start @ {switch}")
 
-    # Highlight transition from Adam to L-BFGS if present
-    if "optimizer_phase" in history and 2 in history["optimizer_phase"]:
-        lbfgs_start = history["optimizer_phase"].index(2)
-        ax.axvline(lbfgs_start, color="black", linestyle="--", alpha=0.7, label="L-BFGS Hand-off")
-
-    ax.set_xlabel(r"Optimization Iteration")
-    ax.set_ylabel(r"Loss Magnitude (Log Scale)")
-    ax.set_title("Multi-Objective PINN Loss Convergence (Adam + L-BFGS)")
-    ax.legend(frameon=True, loc="upper right")
+    ax.set_title("Dual-Optimizer Convergence History (Adam + L-BFGS)")
+    ax.set_xlabel("Optimization Step")
+    ax.set_ylabel(r"Loss (Logarithmic Scale)")
+    ax.legend(loc="upper right", framealpha=0.9)
 
     if save_path:
         os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-        fig.savefig(save_path)
-        plt.close(fig)
-
-    return fig
-
-
-def plot_cross_sections(
-    x_vals: np.ndarray,
-    times: List[float],
-    T_true_slices: List[np.ndarray],
-    T_pred_slices: List[np.ndarray],
-    save_path: Optional[str] = None,
-) -> plt.Figure:
-    """Plots 1D temperature profiles across blade wall thickness at discrete time steps."""
-    set_academic_style()
-    fig, ax = plt.subplots(figsize=(7.5, 4.2))
-
-    palette = sns.color_palette("rocket", len(times))
-
-    for i, t_val in enumerate(times):
-        c = palette[i]
-        ax.plot(x_vals, T_true_slices[i], label=rf"$t={t_val:.2f}$ (Exact)", color=c, linewidth=2.0)
-        ax.plot(x_vals[::4], T_pred_slices[i][::4], "o", markersize=4.5, markerfacecolor="white",
-                markeredgecolor=c, markeredgewidth=1.2, label=rf"$t={t_val:.2f}$ (PINN)")
-
-    ax.set_xlabel(r"Normalized Blade Coordinate $x/L$")
-    ax.set_ylabel(r"Temperature $T(x, t)$")
-    ax.set_title("Spatial Thermal Cross-Sections Over Time")
-    ax.legend(ncol=2, frameon=True, fontsize=8, loc="upper right")
-
-    if save_path:
-        os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-        fig.savefig(save_path)
-        plt.close(fig)
-
-    return fig
-
-
-def plot_parameter_convergence(
-    history: Dict[str, List[float]],
-    true_alpha: float,
-    save_path: Optional[str] = None,
-) -> plt.Figure:
-    """Plots inverse parameter discovery convergence and relative error percentage."""
-    set_academic_style()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7.5, 5.5), sharex=True, constrained_layout=True)
-
-    steps = list(range(len(history["alpha_learned"])))
-    learned = history["alpha_learned"]
-    errors = history["alpha_error_pct"]
-
-    # Top panel: Parameter trajectory
-    ax1.plot(steps, learned, color="#1f77b4", linewidth=2.0, label=r"Discovered $\hat{\alpha}$")
-    ax1.axhline(true_alpha, color="#d62728", linestyle="--", linewidth=1.8, label=rf"True $\alpha = {true_alpha:.4f}$")
-    ax1.set_ylabel(r"Diffusivity $\alpha$ [$m^2/s$]")
-    ax1.set_title("Inverse System Identification: Thermal Diffusivity Discovery")
-    ax1.legend(frameon=True, loc="lower right")
-
-    # Bottom panel: Estimation error
-    ax2.semilogy(steps, errors, color="#2ca02c", linewidth=2.0)
-    ax2.axhline(0.8, color="gray", linestyle=":", label="0.8% Target Threshold")
-    ax2.set_xlabel(r"Optimization Iteration")
-    ax2.set_ylabel(r"Relative Error [%]")
-    ax2.set_title("Parameter Calibration Error (%)")
-    ax2.legend(frameon=True, loc="upper right")
-
-    if save_path:
-        os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-        fig.savefig(save_path)
-        plt.close(fig)
+        fig.savefig(save_path, dpi=300)
+        print(f"[FIGURE SAVED] Loss history -> {save_path}")
 
     return fig

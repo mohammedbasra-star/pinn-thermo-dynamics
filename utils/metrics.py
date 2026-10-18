@@ -1,17 +1,18 @@
 """
-Physics-Informed Neural Networks for High-Temperature Turbomachinery & Thermodynamic Dynamics
+Physics-Informed Neural Networks (PINNs) Benchmark Suite - PyTorch 2.x
 Module: utils/metrics.py
 
-Rigorous scientific error metrics for benchmark quantification:
-- Relative L2 error (Frobenius norm ratio)
+Rigorous scientific error metrics for benchmark quantification (Raissi et al. 2019):
+- Relative L2 error: ||u_pred - u_true||_2 / ||u_true||_2
+- Frobenius norm error: ||u_pred - u_true||_F / ||u_true||_F
 - Mean Squared Error (MSE)
 - Root Mean Squared Error (RMSE)
 - Mean Absolute Error (MAE)
 - Maximum Pointwise Error (L_inf norm)
-- Inverse Parameter Discovery Error (%)
+- Parameter discovery percentage error (inverse problems)
 """
 
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 import numpy as np
 import torch
 
@@ -31,12 +32,31 @@ def relative_l2_error(
     r"""
     Computes Relative L2 Error (standard metric in SciML and PINN literature):
         .. math::
-            \epsilon_{L_2} = \frac{\|\hat{T} - T^*\|_2}{\|T^*\|_2 + \epsilon}
+            \epsilon_{L_2} = \frac{\|\hat{u} - u^*\|_2}{\|u^*\|_2 + \epsilon}
     """
     p = to_numpy(pred)
     t = to_numpy(true)
     norm_diff = np.linalg.norm(p - t, 2)
     norm_true = np.linalg.norm(t, 2)
+    return float(norm_diff / (norm_true + eps))
+
+
+def frobenius_error(
+    pred: Union[torch.Tensor, np.ndarray],
+    true: Union[torch.Tensor, np.ndarray],
+    eps: float = 1e-12,
+) -> float:
+    r"""
+    Computes Relative Frobenius Norm Error for 2D fields:
+        .. math::
+            \epsilon_{F} = \frac{\|\hat{\mathbf{U}} - \mathbf{U}^*\|_F}{\|\mathbf{U}^*\|_F + \epsilon}
+    """
+    if isinstance(pred, torch.Tensor):
+        pred = pred.detach().cpu().numpy()
+    if isinstance(true, torch.Tensor):
+        true = true.detach().cpu().numpy()
+    norm_diff = np.linalg.norm(pred - true, "fro")
+    norm_true = np.linalg.norm(true, "fro")
     return float(norm_diff / (norm_true + eps))
 
 
@@ -75,7 +95,7 @@ def max_absolute_error(
     r"""
     Computes Maximum Pointwise Absolute Error (:math:`L_\infty` norm):
         .. math::
-            \epsilon_{\infty} = \max_i |\hat{T}_i - T^*_i|
+            \epsilon_{\infty} = \max_i |\hat{u}_i - u^*_i|
     """
     p = to_numpy(pred)
     t = to_numpy(true)
@@ -85,22 +105,23 @@ def max_absolute_error(
 def compute_metrics(
     pred: Union[torch.Tensor, np.ndarray],
     true: Union[torch.Tensor, np.ndarray],
-    p_learned: float = None,
-    p_true: float = None,
+    param_learned: Optional[float] = None,
+    param_true: Optional[float] = None,
 ) -> Dict[str, float]:
     """Computes comprehensive scientific benchmark metrics dictionary."""
     metrics = {
         "relative_l2_error": relative_l2_error(pred, true),
+        "frobenius_error": frobenius_error(pred, true),
         "mean_squared_error": mean_squared_error(pred, true),
         "rmse": root_mean_squared_error(pred, true),
         "mae": mean_absolute_error(pred, true),
         "max_error_linf": max_absolute_error(pred, true),
     }
 
-    if p_learned is not None and p_true is not None:
-        param_error_pct = abs(p_learned - p_true) / abs(p_true) * 100.0
-        metrics["param_true"] = float(p_true)
-        metrics["param_learned"] = float(p_learned)
+    if param_learned is not None and param_true is not None:
+        param_error_pct = abs(param_learned - param_true) / abs(param_true) * 100.0
+        metrics["param_true"] = float(param_true)
+        metrics["param_learned"] = float(param_learned)
         metrics["param_error_pct"] = float(param_error_pct)
 
     return metrics

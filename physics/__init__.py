@@ -1,26 +1,14 @@
 """
-Physics module for High-Temperature Turbomachinery & Thermodynamic Dynamics.
-Governing PDE formulations, boundary conditions, and automatic differentiation residuals.
+Physics-Informed Neural Networks (PINNs) Benchmark Suite - PyTorch 2.x
+Module: physics
 """
 
-from .heat_pde import HeatConductionPDE
-from .boundary_conditions import BoundaryConditionEvaluator
-
-# Maintain backward compatibility
-try:
-    from .pde_residuals import (
-        ManufacturedHeatConduction,
-        PolytropicThermodynamics,
-        compute_pde_residuals,
-    )
-    from .boundary_conds import (
-        BoundaryConditionManager,
-        CollocationSampler,
-    )
-except ImportError:
-    pass
+from physics.burgers import BurgersPDE
+from physics.schrodinger import SchrodingerPDE
+from physics.navier_stokes import NavierStokes2DPDE
 
 __all__ = [
-    "HeatConductionPDE",
-    "BoundaryConditionEvaluator",
+    "BurgersPDE",
+    "SchrodingerPDE",
+    "NavierStokes2DPDE",
 ]

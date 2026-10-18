@@ -1,15 +1,26 @@
 """
-Data module for ground truth generation and reference numerical solvers.
+Physics-Informed Neural Networks (PINNs) Benchmark Suite - PyTorch 2.x
+Module: data
 """
 
-from .generate_ground_truth import (
-    AnalyticalHeatConduction,
-    CrankNicolsonHeatSolver,
-    generate_benchmark,
+from data.download_benchmarks import (
+    download_dataset,
+    download_all_benchmarks,
+    BENCHMARK_URLS,
+)
+from data.dataset import (
+    BurgersBenchmarkData,
+    SchrodingerBenchmarkData,
+    CollocationDataset,
+    BoundaryDataset,
 )
 
 __all__ = [
-    "AnalyticalHeatConduction",
-    "CrankNicolsonHeatSolver",
-    "generate_benchmark",
+    "download_dataset",
+    "download_all_benchmarks",
+    "BENCHMARK_URLS",
+    "BurgersBenchmarkData",
+    "SchrodingerBenchmarkData",
+    "CollocationDataset",
+    "BoundaryDataset",
 ]

@@ -1,19 +1,13 @@
 """
-Models module for PINN architectures and physics-informed solvers.
+Physics-Informed Neural Networks (PINNs) Benchmark Suite - PyTorch 2.x
+Module: models
 """
 
-from .networks import (
-    StandardMLP,
-    FourierFeatureEmbedding,
-    ModifiedMLP,
-    build_network,
-)
-from .pinn_solver import PINNSolver
+from models.mlp import MLP, SinActivation
+from models.compiled_solver import PINNCompiledSolver
 
 __all__ = [
-    "StandardMLP",
-    "FourierFeatureEmbedding",
-    "ModifiedMLP",
-    "build_network",
-    "PINNSolver",
+    "MLP",
+    "SinActivation",
+    "PINNCompiledSolver",
 ]
