@@ -95,11 +95,17 @@ class TurbomachineryHeatConduction2D(nn.Module):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         T, T_t, T_x, T_y, T_xx, T_yy = self.compute_derivatives_autograd(model, x, y, t)
 
-        alpha_eff = self.alpha
-        # Linearized / Weakly non-linear heat conduction
-        # dT/dt - alpha * (d2T/dx2 + d2T/dy2) - Q/(rho*cp) = 0
+        alpha_base = self.alpha  # k0 / (rho * cp)
+        # Rigorous temperature-dependent thermal conductivity: k(T) = k0 * [1 + beta * (T - T0)]
+        # Chain rule expansion: div(k(T) * grad(T)) = k(T) * div(grad T) + (dk/dT) * |grad T|^2
+        k_factor = 1.0 + self.beta * (T - self.T0)
+        laplacian_T = T_xx + T_yy
+        grad_norm_sq = (T_x ** 2) + (T_y ** 2)
+        
+        # Complete divergence of heat conduction flux including quadratic thermal gradient term
+        thermal_diffusion = (alpha_base * k_factor * laplacian_T) + (alpha_base * self.beta * grad_norm_sq)
         q_term = (source_Q / (self.rho * self.cp)) if source_Q is not None else 0.0
-        res = T_t - alpha_eff * (T_xx + T_yy) - q_term
+        res = T_t - thermal_diffusion - q_term
 
         return T, res
 
