@@ -30,7 +30,7 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from data.dataset import BurgersBenchmarkData, SchrodingerBenchmarkData
-from models.mlp import MLP
+from models.mlp import MLP, HardBoundaryAnsatzPINN
 from models.compiled_solver import PINNCompiledSolver
 from physics.burgers import BurgersPDE
 from physics.schrodinger import SchrodingerPDE
@@ -67,6 +67,8 @@ def parse_args():
                         help="Hidden layer neurons (Raissi 2019 baseline: 8 layers of 20 neurons)")
     parser.add_argument("--activation", type=str, choices=["tanh", "sin", "gelu", "silu"], default="tanh",
                         help="Hidden activation function")
+    parser.add_argument("--hard-bc", action="store_true",
+                        help="Enable exact distance-field hard boundary condition ansatz u = u0 + D*N_theta")
 
     # Dual-Stage Optimization
     parser.add_argument("--adam-epochs", type=int, default=2000,
@@ -139,6 +141,9 @@ def train_burgers(args, device: torch.device):
         ub=data_mgr.ub,
         init_type="xavier_normal",
     )
+    if args.hard_bc:
+        print("[MODEL] Wrapping MLP with HardBoundaryAnsatzPINN (Exact BC Distance Field Ansatz)")
+        model = HardBoundaryAnsatzPINN(model)
     print(f"[MODEL] Initialized {model}")
 
     # 3. Physics PDE Operator (nu = 0.01 / pi)

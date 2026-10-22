@@ -1,14 +1,16 @@
 """
-Physics-Informed Neural Networks (PINNs) Benchmark Suite - PyTorch 2.x
-Module: physics
+Physics-Informed Neural Networks (PINNs) Physics Suite.
 """
 
 from physics.burgers import BurgersPDE
 from physics.schrodinger import SchrodingerPDE
-from physics.navier_stokes import NavierStokes2DPDE
+from physics.navier_stokes import NavierStokesPDE
+from physics.thermal_conduction import TurbomachineryHeatConduction2D, solve_crank_nicolson_2d
 
 __all__ = [
     "BurgersPDE",
     "SchrodingerPDE",
-    "NavierStokes2DPDE",
+    "NavierStokesPDE",
+    "TurbomachineryHeatConduction2D",
+    "solve_crank_nicolson_2d",
 ]

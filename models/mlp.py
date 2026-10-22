@@ -160,3 +160,36 @@ class MLP(nn.Module):
             f"layers={self.hidden_layers}, activation={self.activation_name}, "
             f"params={self.count_parameters():,})"
         )
+
+
+class HardBoundaryAnsatzPINN(nn.Module):
+    r"""
+    Exact (Hard) Boundary Condition Enforcement via Distance Field Ansatz:
+        .. math::
+            u_{\theta}(x, t) = u_0(x) + D(x, t) \cdot \mathcal{N}_{\theta}(x, t)
+
+    Where :math:`D(x, t) = (1 - x^2) \cdot t` vanishes exactly at boundaries :math:`x = \pm 1`
+    and at initial condition :math:`t = 0`. This eliminates boundary loss penalty competition,
+    guaranteeing :math:`\mathcal{L}_{\mathrm{bc}} \equiv 0` identically across all training iterations.
+    """
+
+    def __init__(self, backbone_mlp: MLP):
+        super().__init__()
+        self.net = backbone_mlp
+
+    def forward(self, coords: torch.Tensor) -> torch.Tensor:
+        # coords: (N, 2) [x, t]
+        x = coords[:, 0:1]
+        t = coords[:, 1:2]
+
+        # Initial condition: u_0(x) = -sin(pi * x)
+        u0 = -torch.sin(np.pi * x)
+
+        # Distance function vanishing at x = -1, x = 1, and t = 0
+        dist = (1.0 - x ** 2) * t
+
+        # Neural network output
+        nn_out = self.net(coords)
+
+        # Exact ansatz satisfying initial and boundary conditions
+        return u0 + dist * nn_out

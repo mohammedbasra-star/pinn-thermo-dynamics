@@ -78,7 +78,6 @@ class BurgersPDE(nn.Module):
             inputs=(x, t),
             grad_outputs=torch.ones_like(u),
             create_graph=True,
-            retain_graph=True,
         )
         u_x = grad_u[0]
         u_t = grad_u[1]
@@ -89,7 +88,6 @@ class BurgersPDE(nn.Module):
             inputs=x,
             grad_outputs=torch.ones_like(u_x),
             create_graph=True,
-            retain_graph=True,
         )[0]
 
         return u, u_t, u_x, u_xx

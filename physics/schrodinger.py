@@ -60,7 +60,6 @@ class SchrodingerPDE(nn.Module):
             inputs=(x, t),
             grad_outputs=torch.ones_like(u),
             create_graph=True,
-            retain_graph=True,
         )
         u_x = grad_u[0]
         u_t = grad_u[1]
@@ -71,7 +70,6 @@ class SchrodingerPDE(nn.Module):
             inputs=(x, t),
             grad_outputs=torch.ones_like(v),
             create_graph=True,
-            retain_graph=True,
         )
         v_x = grad_v[0]
         v_t = grad_v[1]
@@ -82,7 +80,6 @@ class SchrodingerPDE(nn.Module):
             inputs=x,
             grad_outputs=torch.ones_like(u_x),
             create_graph=True,
-            retain_graph=True,
         )[0]
 
         v_xx = torch.autograd.grad(
@@ -90,7 +87,6 @@ class SchrodingerPDE(nn.Module):
             inputs=x,
             grad_outputs=torch.ones_like(v_x),
             create_graph=True,
-            retain_graph=True,
         )[0]
 
         return u, v, u_t, v_t, u_xx, v_xx
